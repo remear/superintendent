@@ -27,9 +27,16 @@ module Superintendent::Request
       when Array
         value.map { |v| underscored_keys(v) }
       when Hash
+        underscored_type(value['data']) if value['data'].present?
         Hash[value.map { |k, v| [underscored_key(k), underscored_keys(v)] }]
       else
         value
+      end
+    end
+
+    def underscored_type(data)
+      [data].flatten.map do |value|
+        value['type'] = underscored_key(value['type']) if value['type'].present?
       end
     end
   end
