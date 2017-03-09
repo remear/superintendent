@@ -79,6 +79,51 @@ class UserForm
   end
 end
 
+class UserRelationshipsMotherForm
+  def self.update
+    {
+      "type" => "object",
+      "properties": {
+        "data": {
+          "type" => "object",
+          "properties" => {
+            "id" => {
+              "type" => "string"
+            },
+            "type" => {
+              "type" => "string",
+              "enum" => [ "mothers" ]
+            }
+          },
+          "required" => [
+            "id",
+            "type"
+          ]
+        }
+      },
+      "required": [
+        "data"
+      ]
+    }
+  end
+end
+
+class UserRelationshipsThingForm
+  def self.update
+    {
+      "type" => "object",
+      "properties": {
+        "data": {
+          "type" => "array"
+        }
+      },
+      "required": [
+        "data"
+      ]
+    }
+  end
+end
+
 class RequestValidatorTest < Minitest::Test
   def setup
     @app = lambda { |env| [200, {}, []] }
@@ -167,6 +212,55 @@ class RequestValidatorTest < Minitest::Test
       }
     }
     env = mock_env('/users/US5d251f5d477f42039170ea968975011b', 'PUT',
+                   input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
+    status, headers, body = @validator.call(env)
+    assert_equal 200, status
+  end
+
+  def test_relationships
+    params = {
+      data: {
+        id: 'US5d251f5d477f42039170ea968975011b',
+        type: 'mothers'
+      }
+    }
+    env = mock_env('/users/US5d251f5d477f42039170ea968975011b/relationships/mother', 'PUT',
+                   input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
+    status, headers, body = @validator.call(env)
+    assert_equal 200, status
+  end
+
+  def test_relationships_no_form_404
+    params = {
+      data: {
+        id: 'US5d251f5d477f42039170ea968975011b',
+        type: 'father'
+      }
+    }
+    env = mock_env('/users/US5d251f5d477f42039170ea968975011b/relationships/father', 'PUT',
+                   input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
+    status, headers, body = @validator.call(env)
+    assert_equal 404, status
+  end
+
+  def test_relationships_400
+    params = {
+      data: {
+        id: 'US5d251f5d477f42039170ea968975011b',
+        type: 'fathers'
+      }
+    }
+    env = mock_env('/users/US5d251f5d477f42039170ea968975011b/relationships/mother', 'PUT',
+                   input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
+    status, headers, body = @validator.call(env)
+    assert_equal 400, status
+  end
+
+  def test_plural_relationships_use_singular_form
+    params = {
+      data: []
+    }
+    env = mock_env('/users/US5d251f5d477f42039170ea968975011b/relationships/things', 'PUT',
                    input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
     status, headers, body = @validator.call(env)
     assert_equal 200, status
