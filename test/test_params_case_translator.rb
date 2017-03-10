@@ -86,4 +86,53 @@ class ParamsCaseTranslatorTest < Minitest::Test
     assert response_params['meta']['tag_list'].first.has_key? 'display_name'
     assert response_params['links'].has_key? 'user_groups'
   end
+
+  def test_type_should_always_be_snake_case
+    params = { 'data' => { 'type' => 'dataElements' } }
+    env = mock_env(
+      '/',
+      'POST',
+      {
+        'HTTP_X_API_DATA_CASE' => 'camel-lower',
+        'action_dispatch.request.request_parameters' => params
+      }
+    )
+    status, headers, body = @translator.call(env)
+    assert_equal 200, status
+    response_params = body.first
+    assert_equal 'data_elements', response_params['data']['type']
+  end
+
+  def test_relationships_type_should_always_be_snake_case
+    params = {
+      'relationships' => {
+        'greatAuthors' => {
+          'data' => { 'type' => 'greatAuthors', 'id' => 9, 'settings' => { 'type' => 'dataElements' } }
+        },
+        'dataElements' => {
+          'data' => [
+            { 'type' => 'dataElements', 'id' => 5, 'settings' => { 'type' => 'dataElements' } },
+            { 'type' => 'dataElements', 'id' => 1, 'settings' => { 'type' => 'dataElements' } }
+          ]
+        }
+      }
+    }
+    env = mock_env(
+      '/',
+      'POST',
+      {
+        'HTTP_X_API_DATA_CASE' => 'camel-lower',
+        'action_dispatch.request.request_parameters' => params
+      }
+    )
+    status, headers, body = @translator.call(env)
+    assert_equal 200, status
+    response_params = body.first
+    assert_equal 'great_authors', response_params['relationships']['great_authors']['data']['type']
+    assert_equal 'data_elements', response_params['relationships']['data_elements']['data'][0]['type']
+    assert_equal 'data_elements', response_params['relationships']['data_elements']['data'][1]['type']
+    assert_equal 'dataElements', response_params['relationships']['great_authors']['data']['settings']['type']
+    assert_equal 'dataElements', response_params['relationships']['data_elements']['data'][0]['settings']['type']
+    assert_equal 'dataElements', response_params['relationships']['data_elements']['data'][1]['settings']['type']
+  end
 end
