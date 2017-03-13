@@ -16,6 +16,8 @@ module Superintendent::Request
     }
 
     JSON_API_CONTENT_TYPE = 'application/vnd.api+json'.freeze
+    ID = /(\d+|[A-Z]{2}[a-zA-Z0-9]{32})/
+    RELATIONSHIPS = /^relationships$/
 
     def initialize(app, opts={})
       @app, @options = app, DEFAULT_OPTIONS.merge(opts)
@@ -97,13 +99,19 @@ module Superintendent::Request
     # Determine the requested resource based on the requested endpoint
     def requested_resource(request_path)
       parts = request_path.split('/')
-      # if the last part is an ID, return the part before it, the resource.
-      if (parts[-1]=~/(\d+|[A-Z]{2}[a-zA-Z0-9]{32})/)
-        resource = parts[-2]
+      raw_resource(parts)
+    end
+
+    def raw_resource(parts)
+      if (parts[-1]=~ ID)
+        # resource/id return resource
+        parts[-2].classify
+      elsif (parts.size > 3 && parts[-3] =~ ID && parts[-2]=~ RELATIONSHIPS)
+        # matches resource/id/relationships/relationship_resource
+        [parts[-4].classify, parts[-2].capitalize, parts[-1].classify].join
       else
-        resource = parts[-1]
+        parts[-1].classify
       end
-      resource.singularize.classify
     end
 
     def respond_400(errors)
