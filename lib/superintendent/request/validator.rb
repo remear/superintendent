@@ -60,7 +60,7 @@ module Superintendent::Request
     def drop_extra_params!(form, data)
       form_data = form['properties']['data']['properties']
       allowed_params = form_data['attributes']['properties'].keys rescue nil
-      allowed_params.nil? ? nil : data['data']['attributes'].slice!(*allowed_params)
+      data['data'].fetch('attributes', {}).slice!(*allowed_params) if allowed_params.present?
     end
 
     def form_for_method(forms, request_method)

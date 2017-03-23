@@ -124,6 +124,43 @@ class UserRelationshipsThingForm
   end
 end
 
+class NoAttributesSuppliedForm
+  def self.create
+    {
+      "type" => "object",
+      "properties": {
+        "data": {
+          "type" => "object",
+          "properties" => {
+            "meta" => {
+              "type" => "object"
+            },
+            "attributes" => {
+              "type" => "object",
+              "properties" => {
+                "foo" => {
+                  "type" => "object"
+                }
+              }
+            },
+            "type" => {
+              "type" => "string",
+              "enum" => [ "no_attributes" ]
+            }
+          },
+          "required" => [
+            "meta",
+            "type"
+          ]
+        }
+      },
+      "required": [
+        "data"
+      ]
+    }
+  end
+end
+
 class RequestValidatorTest < Minitest::Test
   def setup
     @app = lambda { |env| [200, {}, []] }
@@ -212,6 +249,19 @@ class RequestValidatorTest < Minitest::Test
       }
     }
     env = mock_env('/users/US5d251f5d477f42039170ea968975011b', 'PUT',
+                   input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
+    status, headers, body = @validator.call(env)
+    assert_equal 200, status
+  end
+
+  def test_optional_attributes_not_supplied
+    params = {
+      data: {
+        meta: {},
+        type: 'no_attributes'
+      }
+    }
+    env = mock_env('/no_attributes_supplied/NA1111111111111111111111111111111', 'POST',
                    input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
     status, headers, body = @validator.call(env)
     assert_equal 200, status
