@@ -81,6 +81,14 @@ end
 
 class UserRelationshipsMotherForm
   def self.update
+    form
+  end
+
+  def self.destroy
+    form
+  end
+
+  def self.form
     {
       "type" => "object",
       "properties": {
@@ -106,6 +114,7 @@ class UserRelationshipsMotherForm
       ]
     }
   end
+  private_class_method :form
 end
 
 class UserRelationshipsThingForm
@@ -230,6 +239,19 @@ class RequestValidatorTest < Minitest::Test
     assert_equal 200, status
   end
 
+  def test_relationships_400
+    params = {
+      data: {
+        id: 'US5d251f5d477f42039170ea968975011b',
+        type: 'fathers'
+      }
+    }
+    env = mock_env('/users/US5d251f5d477f42039170ea968975011b/relationships/mother', 'PUT',
+                   input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
+    status, headers, body = @validator.call(env)
+    assert_equal 400, status
+  end
+
   def test_relationships_no_form_404
     params = {
       data: {
@@ -243,17 +265,56 @@ class RequestValidatorTest < Minitest::Test
     assert_equal 404, status
   end
 
-  def test_relationships_400
+  def test_relationships_delete_200
     params = {
       data: {
         id: 'US5d251f5d477f42039170ea968975011b',
-        type: 'fathers'
+        type: 'mothers'
       }
     }
-    env = mock_env('/users/US5d251f5d477f42039170ea968975011b/relationships/mother', 'PUT',
+    env = mock_env('/users/US5d251f5d477f42039170ea968975011b/relationships/mother', 'DELETE',
+                   input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
+    status, headers, body = @validator.call(env)
+    assert_equal 200, status
+  end
+
+  def test_relationships_delete_400_bad_request
+    params = {
+      data: {
+        id: 'US5d251f5d477f42039170ea968975011b'
+      }
+    }
+    env = mock_env('/users/US5d251f5d477f42039170ea968975011b/relationships/mother', 'DELETE',
                    input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
     status, headers, body = @validator.call(env)
     assert_equal 400, status
+  end
+
+  def test_relationships_delete_400_no_body
+    env = mock_env('/users/US5d251f5d477f42039170ea968975011b/relationships/mother', 'DELETE',
+                   'CONTENT_TYPE' => 'application/vnd.api+json')
+    status, headers, body = @validator.call(env)
+    assert_equal 400, status
+  end
+
+  def test_relationships_delete_404_no_form_method
+    params = {
+      data: {
+        id: 'US5d251f5d477f42039170ea968975011b',
+        type: 'users'
+      }
+    }
+    env = mock_env('/users/US5d251f5d477f42039170ea968975011b', 'DELETE',
+                   input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
+    status, headers, body = @validator.call(env)
+    assert_equal 404, status
+  end
+
+  def test_delete_200_no_body_no_form_method
+    env = mock_env('/users/US5d251f5d477f42039170ea968975011b', 'DELETE',
+                   'CONTENT_TYPE' => 'application/vnd.api+json')
+    status, headers, body = @validator.call(env)
+    assert_equal 200, status
   end
 
   def test_plural_relationships_use_singular_form
