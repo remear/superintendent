@@ -8,16 +8,17 @@ module Superintendent::Request
     FORM_METHOD_ACTIONS = {
       'POST' => 'create',
       'PATCH' => 'update',
-      'PUT' => 'update'
-    }
+      'PUT' => 'update',
+      'DELETE' => 'delete'
+    }.freeze
 
     DEFAULT_OPTIONS = {
       :monitored_content_types => ['application/json']
-    }
+    }.freeze
 
     JSON_API_CONTENT_TYPE = 'application/vnd.api+json'.freeze
-    ID = /(\d+|[A-Z]{2}[a-zA-Z0-9]{32})/
-    RELATIONSHIPS = /^relationships$/
+    ID = /(\d+|[A-Z]{2}[a-zA-Z0-9]{32})/.freeze
+    RELATIONSHIPS = /^relationships$/.freeze
 
     def initialize(app, opts={})
       @app, @options = app, DEFAULT_OPTIONS.merge(opts)
@@ -35,25 +36,31 @@ module Superintendent::Request
         resource = requested_resource(request.path_info)
 
         begin
-          forms = "#{resource}Form".constantize
-          form = form_for_method(forms, request.request_method)
+          form = form_for_method(resource, request.request_method)
         rescue NameError => e
           return respond_404 # Return a 404 if no form was found.
         end
 
-        errors = JSON::Validator.fully_validate(
-          form, request_data, { errors_as_objects: true })
-
-        if ! errors.empty?
-          return respond_400(serialize_errors(request.headers[Id::X_REQUEST_ID], errors))
+        unless skip_validation?(request, form)
+          return respond_404 if form.nil?
+          errors = JSON::Validator.fully_validate(
+            form, request_data, { errors_as_objects: true })
+          if ! errors.empty?
+            return respond_400(serialize_errors(request.headers[Id::X_REQUEST_ID], errors))
+          end
+          drop_extra_params!(form, request_data) unless request_data.blank?
         end
-        drop_extra_params!(form, request_data) unless request_data.blank?
       end
 
       @app.call(env)
     end
 
     private
+
+    def skip_validation?(request, form)
+      request.request_method == 'DELETE' && form.nil? &&
+        request.request_parameters.blank?
+    end
 
     # Parameters that are not in the form are removed from the request so they
     # never reach the controller.
@@ -63,8 +70,10 @@ module Superintendent::Request
       data['data'].fetch('attributes', {}).slice!(*allowed_params) if allowed_params.present?
     end
 
-    def form_for_method(forms, request_method)
-      forms.send(FORM_METHOD_ACTIONS[request_method]).with_indifferent_access
+    def form_for_method(resource, request_method)
+      forms_klass = "#{resource}Form".constantize
+      method = FORM_METHOD_ACTIONS[request_method]
+      forms_klass.send(method).with_indifferent_access if forms_klass.respond_to?(method)
     end
 
     # Adjust the errors returned from the schema validator so they can be
