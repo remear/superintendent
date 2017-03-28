@@ -84,7 +84,7 @@ class UserRelationshipsMotherForm
     form
   end
 
-  def self.destroy
+  def self.delete
     form
   end
 
@@ -115,6 +115,9 @@ class UserRelationshipsMotherForm
     }
   end
   private_class_method :form
+end
+
+class NoMethodsForm
 end
 
 class UserRelationshipsThingForm
@@ -315,6 +318,16 @@ class RequestValidatorTest < Minitest::Test
                    'CONTENT_TYPE' => 'application/vnd.api+json')
     status, headers, body = @validator.call(env)
     assert_equal 200, status
+  end
+
+  def test_no_form_method
+    ['POST', 'PATCH', 'PUT'].each do |verb|
+      env = mock_env('/no_methods/NM5d251f5d477f42039170ea968975011b', verb,
+                     'CONTENT_TYPE' => 'application/vnd.api+json')
+      status, headers, body = @validator.call(env)
+      assert_equal 404, status
+    end
+
   end
 
   def test_plural_relationships_use_singular_form

@@ -9,7 +9,7 @@ module Superintendent::Request
       'POST' => 'create',
       'PATCH' => 'update',
       'PUT' => 'update',
-      'DELETE' => 'destroy'
+      'DELETE' => 'delete'
     }.freeze
 
     DEFAULT_OPTIONS = {
@@ -41,7 +41,7 @@ module Superintendent::Request
           return respond_404 # Return a 404 if no form was found.
         end
 
-        if form.present? || request_data.present?
+        unless skip_validation?(request, form)
           return respond_404 if form.nil?
           errors = JSON::Validator.fully_validate(
             form, request_data, { errors_as_objects: true })
@@ -56,6 +56,11 @@ module Superintendent::Request
     end
 
     private
+
+    def skip_validation?(request, form)
+      request.request_method == 'DELETE' && form.nil? &&
+        request.request_parameters.blank?
+    end
 
     # Parameters that are not in the form are removed from the request so they
     # never reach the controller.
