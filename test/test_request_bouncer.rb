@@ -104,4 +104,3 @@ class RequestBouncerTest < Minitest::Test
     assert_equal [200, {}, []], bouncer.call(env)
   end
 end
-

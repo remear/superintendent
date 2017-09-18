@@ -16,6 +16,8 @@ module Superintendent::Request
       :monitored_content_types => ['application/json']
     }.freeze
 
+    PARAMS_WRAPPER_KEYS = ['_json', '_jsonapi'].freeze
+    JSON_CONTENT_TYPE = 'application/json'.freeze
     JSON_API_CONTENT_TYPE = 'application/vnd.api+json'.freeze
     ID = /(\d+|[A-Z]{2}[a-zA-Z0-9]{32})/.freeze
     RELATIONSHIPS = /^relationships$/.freeze
@@ -25,30 +27,38 @@ module Superintendent::Request
     end
 
     def call(env)
-      request = ActionDispatch::Request.new(env)
+      @request = ActionDispatch::Request.new(env)
 
       # Only manage requests for the selected Mime Types and
       # FORM_METHOD_ACTIONS.
-      if @options[:monitored_content_types].include?(request.content_type) &&
-        FORM_METHOD_ACTIONS.has_key?(request.request_method)
+      if @options[:monitored_content_types].include?(@request.content_type) &&
+        FORM_METHOD_ACTIONS.has_key?(@request.request_method)
 
-        request_data = request.request_parameters
-        resource = requested_resource(request.path_info)
+        request_data = @request.request_parameters
+        resource = requested_resource(@request.path_info)
 
         begin
-          form = form_for_method(resource, request.request_method)
+          form = form_for_method(resource, @request.request_method)
         rescue NameError => e
           return respond_404 # Return a 404 if no form was found.
         end
 
-        unless skip_validation?(request, form)
+        unless skip_validation?(form)
           return respond_404 if form.nil?
           errors = JSON::Validator.fully_validate(
-            form, request_data, { errors_as_objects: true })
+            form,
+            unnested_params(request_data),
+            { errors_as_objects: true }
+          )
           if ! errors.empty?
-            return respond_400(serialize_errors(request.headers[Id::X_REQUEST_ID], errors))
+            return respond_400(
+              serialize_errors(@request.headers[Id::X_REQUEST_ID], errors)
+            )
           end
-          drop_extra_params!(form, request_data) unless request_data.blank?
+          drop_extra_params!(
+            form,
+            unnested_params(request_data)
+          ) unless request_data.blank?
         end
       end
 
@@ -57,17 +67,26 @@ module Superintendent::Request
 
     private
 
-    def skip_validation?(request, form)
-      request.request_method == 'DELETE' && form.nil? &&
-        request.request_parameters.blank?
+    def skip_validation?(form)
+      @request.request_method == 'DELETE' && form.nil? &&
+        unnested_params(@request.request_parameters).blank?
+    end
+
+    def unnested_params(params)
+      params
+      k = case @request.env['CONTENT_TYPE']
+          when JSON_CONTENT_TYPE then '_json'
+          when JSON_API_CONTENT_TYPE then '_jsonapi'
+          end
+      k ? params.dig(k) : params
     end
 
     # Parameters that are not in the form are removed from the request so they
     # never reach the controller.
-    def drop_extra_params!(form, data)
+    def drop_extra_params!(form, params)
       form_data = form['properties']['data']['properties']
       allowed_params = form_data['attributes']['properties'].keys rescue nil
-      data['data'].fetch('attributes', {}).slice!(*allowed_params) if allowed_params.present?
+      params['data'].fetch('attributes', {}).slice!(*allowed_params) if allowed_params.present?
     end
 
     def form_for_method(resource, request_method)

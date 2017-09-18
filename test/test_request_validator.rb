@@ -206,30 +206,44 @@ class RequestValidatorTest < Minitest::Test
 
   def test_monitored_content_create
     params = {
-      data: {
-        attributes: {
-          first_name: 'Test User'
-        },
-        type: 'users'
+      _jsonapi: {
+        data: {
+          attributes: {
+            first_name: 'Test User'
+          },
+          type: 'users'
+        }
       }
     }
-    env = mock_env('/users', 'POST', input: JSON.generate(params))
+    env = mock_env(
+      '/users',
+      'POST',
+      input: JSON.generate(params),
+      'CONTENT_TYPE' => 'application/vnd.api+json'
+    )
     status, headers, body = @validator.call(env)
     assert_equal 200, status
   end
 
   def test_monitored_accept_update
     params = {
-      data: {
-        attributes: {
-          first_name: 'Test User'
-        },
-        id: 'US5d251f5d477f42039170ea968975011b',
-        type: 'users'
+      _jsonapi: {
+        data: {
+          attributes: {
+            first_name: 'Test User'
+          },
+          id: 'US5d251f5d477f42039170ea968975011b',
+          type: 'users'
+        }
       }
     }
     %w[PUT PATCH].each do |method|
-      env = mock_env('/users/US5d251f5d477f42039170ea968975011b', method, input: JSON.generate(params))
+      env = mock_env(
+        '/users/US5d251f5d477f42039170ea968975011b',
+        method,
+        input: JSON.generate(params),
+        'CONTENT_TYPE' => 'application/vnd.api+json'
+      )
       status, headers, body = @validator.call(env)
       assert_equal 200, status
     end
@@ -237,12 +251,14 @@ class RequestValidatorTest < Minitest::Test
 
   def test_single_resource
     params = {
-      data: {
-        attributes: {
-          first_name: 'Test User'
-        },
-        id: 'US5d251f5d477f42039170ea968975011b',
-        type: 'users'
+      _json: {
+        data: {
+          attributes: {
+            first_name: 'Test User'
+          },
+          id: 'US5d251f5d477f42039170ea968975011b',
+          type: 'users'
+        }
       }
     }
     env = mock_env('/users/US5d251f5d477f42039170ea968975011b', 'PUT', input: JSON.generate(params))
@@ -252,12 +268,14 @@ class RequestValidatorTest < Minitest::Test
 
   def test_single_resource_json_api
     params = {
-      data: {
-        attributes: {
-          first_name: 'Test User'
-        },
-        id: 'US5d251f5d477f42039170ea968975011b',
-        type: 'users'
+      _jsonapi: {
+        data: {
+          attributes: {
+            first_name: 'Test User'
+          },
+          id: 'US5d251f5d477f42039170ea968975011b',
+          type: 'users'
+        }
       }
     }
     env = mock_env('/users/US5d251f5d477f42039170ea968975011b', 'PUT',
@@ -268,9 +286,11 @@ class RequestValidatorTest < Minitest::Test
 
   def test_optional_attributes_not_supplied
     params = {
-      data: {
-        meta: {},
-        type: 'no_attributes'
+      _jsonapi: {
+        data: {
+          meta: {},
+          type: 'no_attributes'
+        }
       }
     }
     env = mock_env('/no_attributes_supplied/NA1111111111111111111111111111111', 'POST',
@@ -281,9 +301,11 @@ class RequestValidatorTest < Minitest::Test
 
   def test_relationships
     params = {
-      data: {
-        id: 'US5d251f5d477f42039170ea968975011b',
-        type: 'mothers'
+      _jsonapi: {
+        data: {
+          id: 'US5d251f5d477f42039170ea968975011b',
+          type: 'mothers'
+        }
       }
     }
     env = mock_env('/users/US5d251f5d477f42039170ea968975011b/relationships/mother', 'PUT',
@@ -294,9 +316,11 @@ class RequestValidatorTest < Minitest::Test
 
   def test_relationships_400
     params = {
-      data: {
-        id: 'US5d251f5d477f42039170ea968975011b',
-        type: 'fathers'
+      _jsonapi: {
+        data: {
+          id: 'US5d251f5d477f42039170ea968975011b',
+          type: 'fathers'
+        }
       }
     }
     env = mock_env('/users/US5d251f5d477f42039170ea968975011b/relationships/mother', 'PUT',
@@ -320,9 +344,11 @@ class RequestValidatorTest < Minitest::Test
 
   def test_relationships_delete_200
     params = {
-      data: {
-        id: 'US5d251f5d477f42039170ea968975011b',
-        type: 'mothers'
+      _jsonapi: {
+        data: {
+          id: 'US5d251f5d477f42039170ea968975011b',
+          type: 'mothers'
+        }
       }
     }
     env = mock_env('/users/US5d251f5d477f42039170ea968975011b/relationships/mother', 'DELETE',
@@ -352,9 +378,11 @@ class RequestValidatorTest < Minitest::Test
 
   def test_relationships_delete_404_no_form_method
     params = {
-      data: {
-        id: 'US5d251f5d477f42039170ea968975011b',
-        type: 'users'
+      _jsonapi: {
+        data: {
+          id: 'US5d251f5d477f42039170ea968975011b',
+          type: 'users'
+        }
       }
     }
     env = mock_env('/users/US5d251f5d477f42039170ea968975011b', 'DELETE',
@@ -382,7 +410,7 @@ class RequestValidatorTest < Minitest::Test
 
   def test_plural_relationships_use_singular_form
     params = {
-      data: []
+      _jsonapi: { data: [] }
     }
     env = mock_env('/users/US5d251f5d477f42039170ea968975011b/relationships/things', 'PUT',
                    input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
@@ -424,5 +452,34 @@ class RequestValidatorTest < Minitest::Test
     env = mock_env('/users', 'POST', input: JSON.generate(params))
     status, headers, body = @validator.call(env)
     assert_equal 400, status
+  end
+
+  def test_drop_extra_params
+    params = {
+      _json: {
+        data: {
+          attributes: {
+            first_name: 'Bob',
+            last_name: 'Jones',
+            extra: 'value'
+          },
+          type: 'users'
+        }
+      }
+    }
+    env = mock_env(
+      '/users',
+      'POST',
+      input: JSON.generate(params)
+    )
+    status, headers, body = @validator.call(env)
+    attributes = env.dig(
+      'action_dispatch.request.request_parameters',
+      '_json',
+      'data',
+      'attributes'
+    )
+    refute attributes.has_key? 'extra'
+    assert_equal 200, status
   end
 end

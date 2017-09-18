@@ -2,28 +2,22 @@ require 'securerandom'
 
 module Superintendent::Request
   class Id
-    X_REQUEST_ID = 'X-Request-Id'.freeze
+    X_REQUEST_ID = 'HTTP_X_REQEUST_ID'.freeze
 
     def initialize(app)
       @app = app
     end
 
     def call(env)
-      request_id = make_request_id(env['HTTP_X_REQUEST_ID'])
-      @app.call(env).tap { |_status, headers, _body| headers[X_REQUEST_ID] = request_id }
+      unless env['HTTP_X_REQUEST_ID']
+        env.merge!('HTTP_X_REQUEST_ID' => generate_request_id)
+      end
+      @app.call(env)
     end
 
     private
 
-    def make_request_id(request_id)
-      if request_id && ! request_id.empty?
-        request_id.gsub(/[^\w\-]/, "".freeze)[0..255]
-      else
-        internal_request_id
-      end
-    end
-
-    def internal_request_id
+    def generate_request_id
       "OHM#{SecureRandom.uuid.gsub!('-', '')}"
     end
   end
