@@ -73,7 +73,7 @@ module Superintendent::Request
     end
 
     def unnested_params(params)
-      params
+      return {} unless params.presence
       k = case @request.env['CONTENT_TYPE']
           when JSON_CONTENT_TYPE then '_json'
           when JSON_API_CONTENT_TYPE then '_jsonapi'
