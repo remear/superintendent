@@ -1,0 +1,18 @@
+language: ruby
+
+script:
+  - bundle exec rake test
+
+env:
+  matrix:
+    - "RAILS_VERSION=5.0"
+    - "RAILS_VERSION=5.1"
+
+rvm:
+  - 2.4.1
+  - 2.4.2
+  - ruby-head
+
+matrix:
+  allow_failures:
+    - rvm: ruby-head
