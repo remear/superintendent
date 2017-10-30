@@ -18,7 +18,7 @@ module Superintendent::Request
     private
 
     def generate_request_id
-      "OHM#{SecureRandom.uuid.gsub!('-', '')}"
+      SecureRandom.uuid
     end
   end
 end
