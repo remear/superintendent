@@ -5,6 +5,7 @@ require 'action_dispatch/http/request'
 
 module Superintendent::Request
   class Validator
+    include Superintendent::Request::Response
     FORM_METHOD_ACTIONS = {
       'POST' => 'create',
       'PATCH' => 'update',
@@ -34,7 +35,7 @@ module Superintendent::Request
       if @options[:monitored_content_types].include?(@request.content_type) &&
         FORM_METHOD_ACTIONS.has_key?(@request.request_method)
 
-        request_data = @request.request_parameters
+        request_data = unnested_params(@request.request_parameters)
         resource = requested_resource(@request.path_info)
 
         begin
@@ -43,21 +44,17 @@ module Superintendent::Request
           return respond_404 # Return a 404 if no form was found.
         end
 
-        unless skip_validation?(form)
+        unless skip_validation?(form, request_data)
           return respond_404 if form.nil?
           errors = JSON::Validator.fully_validate(
             form,
-            unnested_params(request_data),
+            request_data,
             { errors_as_objects: true }
           )
-          if ! errors.empty?
-            return respond_400(
-              serialize_errors(@request.headers[Id::X_REQUEST_ID], errors)
-            )
-          end
+          return respond_400(serialize_errors(errors)) if errors.present?
           drop_extra_params!(
             form,
-            unnested_params(request_data)
+            request_data
           ) unless request_data.blank?
         end
       end
@@ -67,9 +64,18 @@ module Superintendent::Request
 
     private
 
-    def skip_validation?(form)
-      @request.request_method == 'DELETE' && form.nil? &&
-        unnested_params(@request.request_parameters).blank?
+    def serialize_errors(form_errors)
+      errors = adjust_errors(form_errors).map do |e|
+        {
+          code: e[:failed_attribute].underscore.dasherize,
+          title: e[:failed_attribute],
+          detail: e[:message]
+        }
+      end
+    end
+
+    def skip_validation?(form, request_data)
+      @request.request_method == 'DELETE' && form.nil? && request_data.blank?
     end
 
     def unnested_params(params)
@@ -108,22 +114,6 @@ module Superintendent::Request
       end
     end
 
-    def serialize_errors(request_id, form_errors)
-      form_errors = adjust_errors(form_errors)
-      errors = []
-      form_errors.each do |e|
-        error = {
-          id: request_id,
-          status: 400,
-          code: e[:failed_attribute].underscore.dasherize,
-          title: e[:failed_attribute],
-          detail: e[:message]
-        }
-        errors << { attributes: error, type: 'errors' }
-      end
-      JSON.pretty_generate({errors: errors})
-    end
-
     # Determine the requested resource based on the requested endpoint
     def requested_resource(request_path)
       parts = request_path.split('/')
@@ -140,14 +130,6 @@ module Superintendent::Request
       else
         parts[-1].classify
       end
-    end
-
-    def respond_400(errors)
-      [400, {'Content-Type' => JSON_API_CONTENT_TYPE}, [errors]]
-    end
-
-    def respond_404
-      [404, {'Content-Type' => JSON_API_CONTENT_TYPE}, ['']]
     end
   end
 end

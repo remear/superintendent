@@ -3,6 +3,7 @@ require 'action_dispatch/http/request'
 module Superintendent
   module Request
     class Bouncer
+      include Superintendent::Request::Response
       DEFAULT_OPTS = {
         required_headers: [],
         supported_content_types: [
@@ -20,22 +21,26 @@ module Superintendent
 
         if required_keys_missing?
           return respond_400(
-            {
-              code: 'headers-missing',
-              title: 'Headers missing',
-              detail: 'Required headers were not present in the request'
-            }
+            [
+              {
+                code: 'headers-missing',
+                title: 'Headers missing',
+                detail: 'Required headers were not present in the request'
+              }
+            ]
           )
         end
 
         if %w[POST PUT PATCH].include? @request.request_method
           if unsupported_content_type?
             return respond_400(
-              {
-                code: 'content-type-unsupported',
-                title: 'Request content-type is unsupported',
-                detail: "#{@request.content_type} is not a supported content-type"
-              }
+              [
+                {
+                  code: 'content-type-unsupported',
+                  title: 'Request content-type is unsupported',
+                  detail: "#{@request.content_type} is not a supported content-type"
+                }
+              ]
             )
           end
         end
@@ -54,25 +59,6 @@ module Superintendent
 
       def required_keys_missing?
         @options[:required_headers].any? { |key| !@request.headers.include?(key) }
-      end
-
-      def respond_400(attributes)
-        [400,
-         {'Content-Type' => 'application/vnd.api+json'},
-         [
-           {
-             errors: [
-               {
-                 attributes: {
-                   id: @request.headers[Id::X_REQUEST_ID],
-                   status: 400
-                 }.merge(attributes),
-                 type: 'errors'
-               }
-             ]
-           }.to_json
-         ]
-        ]
       end
     end
   end
