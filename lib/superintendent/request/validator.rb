@@ -18,8 +18,6 @@ module Superintendent::Request
     }.freeze
 
     PARAMS_WRAPPER_KEYS = ['_json', '_jsonapi'].freeze
-    JSON_CONTENT_TYPE = 'application/json'.freeze
-    JSON_API_CONTENT_TYPE = 'application/vnd.api+json'.freeze
     ID = /(\d+|[A-Z]{2}[a-zA-Z0-9]{32})/.freeze
     RELATIONSHIPS = /^relationships$/.freeze
 

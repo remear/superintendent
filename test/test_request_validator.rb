@@ -175,6 +175,7 @@ end
 
 class RequestValidatorTest < Minitest::Test
   def setup
+    Superintendent.config.error_klass = Superintendent::Request::Error
     @app = lambda { |env| [200, {}, []] }
     @validator = Superintendent::Request::Validator.new(
       @app,
@@ -327,6 +328,8 @@ class RequestValidatorTest < Minitest::Test
                    input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
     status, headers, body = @validator.call(env)
     assert_equal 400, status
+    expected = {"status"=>400, "code"=>"enum", "title"=>"Enum", "detail"=>"The property 'data/type' value \"fathers\" did not match one of the following values: mothers"}
+    validate_error(expected, body)
   end
 
   def test_relationships_no_form_404
@@ -367,6 +370,8 @@ class RequestValidatorTest < Minitest::Test
                    input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
     status, headers, body = @validator.call(env)
     assert_equal 400, status
+    expected = { "code"=>"type-v4", "title"=>"TypeV4", "detail"=>"The property '' of type null did not match the following type: object" }
+    validate_error(expected, body)
   end
 
   def test_relationships_delete_400_no_body
@@ -374,6 +379,8 @@ class RequestValidatorTest < Minitest::Test
                    'CONTENT_TYPE' => 'application/vnd.api+json')
     status, headers, body = @validator.call(env)
     assert_equal 400, status
+    expected = {"code"=>"required", "title"=>"Required", "detail"=>"The request did not contain a required property of 'data'"}
+    validate_error(expected, body)
   end
 
   def test_relationships_delete_404_no_form_method
@@ -440,6 +447,24 @@ class RequestValidatorTest < Minitest::Test
     env = mock_env('/users', 'POST', input: JSON.generate(params))
     status, headers, body = @validator.call(env)
     assert_equal 400, status
+    expected = {"code"=>"type-v4", "title"=>"TypeV4", "detail"=>"The property '' of type null did not match the following type: object"}
+    validate_error(expected, body)
+  end
+
+  def test_schema_conflict_with_alternate_error_class
+    Superintendent.config.error_klass = MyError
+    params = {
+      attributes: {
+        first_name: 123
+      },
+      type: 'users'
+    }
+    env = mock_env('/users', 'POST', input: JSON.generate(params))
+    status, headers, body = @validator.call(env)
+    assert_equal 400, status
+    expected = {"id" => nil, "status"=>400, "code"=>"type-v4", "title"=>"TypeV4", "detail"=>"The property '' of type null did not match the following type: object", "type"=>"errors"}
+    errors = JSON.parse(body.first)['errors']
+    assert_equal expected, errors.first
   end
 
   def test_400_missing_required_attribute
@@ -452,6 +477,9 @@ class RequestValidatorTest < Minitest::Test
     env = mock_env('/users', 'POST', input: JSON.generate(params))
     status, headers, body = @validator.call(env)
     assert_equal 400, status
+    # TODO: this seems like the wrong error
+    expected = {"code"=>"type-v4", "title"=>"TypeV4", "detail"=>"The property '' of type null did not match the following type: object"}
+    validate_error(expected, body)
   end
 
   def test_drop_extra_params

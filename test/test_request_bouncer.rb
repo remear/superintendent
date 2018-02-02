@@ -2,6 +2,7 @@ require_relative 'test_helper'
 
 class RequestBouncerTest < Minitest::Test
   def setup
+    Superintendent.config.error_klass = Superintendent::Request::Error
     @app = lambda { |env| [200, {}, []] }
     @bouncer = Superintendent::Request::Bouncer.new(
       @app, { supported_content_types: ['application/json'] }
@@ -52,11 +53,23 @@ class RequestBouncerTest < Minitest::Test
     )
 
     status, headers, body = bouncer.call(env)
-    response = JSON.parse(body.first)
-    error = response['errors'][0]['attributes']
     assert_equal 400, status
-    assert_equal 400, error['status']
-    assert_equal 'headers-missing', error['code']
+    expected = {"code"=>"headers-missing", "title"=>"Headers missing", "detail"=>"Required headers were not present in the request"}
+    validate_error(expected, body)
+  end
+
+  def test_required_header_missing_alternate_error_class
+    Superintendent.config.error_klass = MyError
+    env = mock_env()
+    bouncer = Superintendent::Request::Bouncer.new(
+      @app, { required_headers: ['Custom-Header'] }
+    )
+
+    status, headers, body = bouncer.call(env)
+    assert_equal 400, status
+    expected = {"id"=> nil, "status"=>400, "code"=>"headers-missing", "title"=>"Headers missing", "detail"=>"Required headers were not present in the request", "type"=>"errors"}
+    errors = JSON.parse(body.first)['errors']
+    assert_equal expected, errors.first
   end
 
   def test_bad_content_type
@@ -64,10 +77,8 @@ class RequestBouncerTest < Minitest::Test
       env = mock_env(method, { 'CONTENT_TYPE' => 'junk' })
       status, headers, body = @bouncer.call(env)
       assert_equal 400, status
-      response = JSON.parse(body.first)
-      error = response['errors'][0]['attributes']
-      assert_equal 400, error['status']
-      assert_equal 'content-type-unsupported', error['code']
+      expected = {"code"=>"content-type-unsupported", "title"=>"Request content-type is unsupported", "detail"=>"junk is not a supported content-type"}
+      validate_error(expected, body)
     end
   end
 
@@ -86,10 +97,8 @@ class RequestBouncerTest < Minitest::Test
     env = mock_env('POST', { 'CONTENT_TYPE' => 'application/json' })
     status, headers, body = bouncer.call(env)
     assert_equal 400, status
-    response = JSON.parse(body.first)
-    error = response['errors'][0]['attributes']
-    assert_equal 400, error['status']
-    assert_equal 'content-type-unsupported', error['code']
+    expected = {"code"=>"content-type-unsupported", "title"=>"Request content-type is unsupported", "detail"=>"application/json is not a supported content-type"}
+    validate_error(expected, body)
   end
 
   def test_multipart_content_type

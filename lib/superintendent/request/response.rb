@@ -1,5 +1,6 @@
 module Superintendent::Request
   module Response
+    JSON_CONTENT_TYPE = 'application/json'.freeze
     JSON_API_CONTENT_TYPE = 'application/vnd.api+json'.freeze
 
     def respond_404
@@ -18,7 +19,7 @@ module Superintendent::Request
 
     def attributes_to_errors(errors)
       errors.map do |attributes|
-        Superintendent::Request::Error.new(
+        Superintendent.config.error_klass.new(
           {
             id: request_id,
             status: 400
