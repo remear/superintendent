@@ -1,7 +1,6 @@
 module Superintendent
   module Request
     class Error
-
       def initialize(attributes)
         @attributes = attributes
       end

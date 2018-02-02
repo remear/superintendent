@@ -11,3 +11,20 @@ require 'active_support/inflector'
 require 'active_support/json'
 require 'superintendent/initializer/register_json_api_mime_type'
 require 'superintendent'
+
+class Minitest::Test
+  class MyError
+    def initialize(attributes)
+      @attributes = attributes
+    end
+
+    def to_h
+      @attributes.merge(type: 'errors')
+    end
+  end
+
+  def validate_error(expected, body)
+    error = JSON.parse(body.first)['errors'].first['attributes']
+    assert_equal expected, error.select { |k, v| expected.keys.include? k }
+  end
+end
