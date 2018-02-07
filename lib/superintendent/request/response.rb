@@ -7,19 +7,19 @@ module Superintendent::Request
       [404, {'Content-Type' => JSON_API_CONTENT_TYPE}, ['']]
     end
 
-    def respond_400(errors)
+    def respond_400(error_class, errors)
       [
         400,
         {'Content-Type' => JSON_API_CONTENT_TYPE},
         [
-          JSON.pretty_generate( errors: attributes_to_errors(errors))
+          JSON.pretty_generate( errors: attributes_to_errors(error_class, errors))
         ]
       ]
     end
 
-    def attributes_to_errors(errors)
+    def attributes_to_errors(error_class, errors)
       errors.map do |attributes|
-        Superintendent.config.error_klass.new(
+        error_class.new(
           {
             id: request_id,
             status: 400

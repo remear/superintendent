@@ -2,7 +2,6 @@ require_relative 'test_helper'
 
 class RequestBouncerTest < Minitest::Test
   def setup
-    Superintendent.config.error_klass = Superintendent::Request::Error
     @app = lambda { |env| [200, {}, []] }
     @bouncer = Superintendent::Request::Bouncer.new(
       @app, { supported_content_types: ['application/json'] }
@@ -59,10 +58,12 @@ class RequestBouncerTest < Minitest::Test
   end
 
   def test_required_header_missing_alternate_error_class
-    Superintendent.config.error_klass = MyError
     env = mock_env()
     bouncer = Superintendent::Request::Bouncer.new(
-      @app, { required_headers: ['Custom-Header'] }
+      @app, {
+        required_headers: ['Custom-Header'],
+        error_class: MyError
+      }
     )
 
     status, headers, body = bouncer.call(env)

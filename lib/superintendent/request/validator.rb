@@ -14,7 +14,8 @@ module Superintendent::Request
     }.freeze
 
     DEFAULT_OPTIONS = {
-      :monitored_content_types => ['application/json']
+      :monitored_content_types => ['application/json'],
+      :error_class => Superintendent::Request::Error
     }.freeze
 
     PARAMS_WRAPPER_KEYS = ['_json', '_jsonapi'].freeze
@@ -22,7 +23,8 @@ module Superintendent::Request
     RELATIONSHIPS = /^relationships$/.freeze
 
     def initialize(app, opts={})
-      @app, @options = app, DEFAULT_OPTIONS.merge(opts)
+      @app = app
+      @options = DEFAULT_OPTIONS.merge(opts)
     end
 
     def call(env)
@@ -49,7 +51,7 @@ module Superintendent::Request
             request_data,
             { errors_as_objects: true }
           )
-          return respond_400(serialize_errors(errors)) if errors.present?
+          return respond_400(@options[:error_class], serialize_errors(errors)) if errors.present?
           drop_extra_params!(
             form,
             request_data

@@ -9,7 +9,8 @@ module Superintendent
         supported_content_types: [
           'application/json',
           'application/x-www-form-urlencoded'
-        ]
+        ],
+        :error_class => Superintendent::Request::Error
       }
 
       def initialize(app, opts={})
@@ -21,6 +22,7 @@ module Superintendent
 
         if required_keys_missing?
           return respond_400(
+            @options[:error_class],
             [
               {
                 code: 'headers-missing',
@@ -34,6 +36,7 @@ module Superintendent
         if %w[POST PUT PATCH].include? @request.request_method
           if unsupported_content_type?
             return respond_400(
+              @options[:error_class],
               [
                 {
                   code: 'content-type-unsupported',

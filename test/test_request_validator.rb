@@ -175,7 +175,6 @@ end
 
 class RequestValidatorTest < Minitest::Test
   def setup
-    Superintendent.config.error_klass = Superintendent::Request::Error
     @app = lambda { |env| [200, {}, []] }
     @validator = Superintendent::Request::Validator.new(
       @app,
@@ -452,7 +451,11 @@ class RequestValidatorTest < Minitest::Test
   end
 
   def test_schema_conflict_with_alternate_error_class
-    Superintendent.config.error_klass = MyError
+    validator = Superintendent::Request::Validator.new(
+      @app,
+      monitored_content_types: ['application/json'],
+      error_class: MyError
+    )
     params = {
       attributes: {
         first_name: 123
@@ -460,7 +463,7 @@ class RequestValidatorTest < Minitest::Test
       type: 'users'
     }
     env = mock_env('/users', 'POST', input: JSON.generate(params))
-    status, headers, body = @validator.call(env)
+    status, headers, body = validator.call(env)
     assert_equal 400, status
     expected = {"id" => nil, "status"=>400, "code"=>"type-v4", "title"=>"TypeV4", "detail"=>"The property '' of type null did not match the following type: object", "type"=>"errors"}
     errors = JSON.parse(body.first)['errors']
