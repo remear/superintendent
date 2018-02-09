@@ -14,8 +14,8 @@ module Superintendent::Request
     }.freeze
 
     DEFAULT_OPTIONS = {
-      :monitored_content_types => ['application/json'],
-      :error_class => Superintendent::Request::Error
+      monitored_content_types: ['application/json'],
+      error_class: Superintendent::Request::Error
     }.freeze
 
     PARAMS_WRAPPER_KEYS = ['_json', '_jsonapi'].freeze

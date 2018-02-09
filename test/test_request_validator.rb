@@ -446,7 +446,11 @@ class RequestValidatorTest < Minitest::Test
     env = mock_env('/users', 'POST', input: JSON.generate(params))
     status, headers, body = @validator.call(env)
     assert_equal 400, status
-    expected = {"code"=>"type-v4", "title"=>"TypeV4", "detail"=>"The property '' of type null did not match the following type: object"}
+    expected = {
+      "code" => "type-v4",
+      "title" => "TypeV4",
+      "detail" => "The property '' of type null did not match the following type: object"
+    }
     validate_error(expected, body)
   end
 
@@ -465,7 +469,14 @@ class RequestValidatorTest < Minitest::Test
     env = mock_env('/users', 'POST', input: JSON.generate(params))
     status, headers, body = validator.call(env)
     assert_equal 400, status
-    expected = {"id" => nil, "status"=>400, "code"=>"type-v4", "title"=>"TypeV4", "detail"=>"The property '' of type null did not match the following type: object", "type"=>"errors"}
+    expected = {
+      "id" => nil,
+      "status" => 400,
+      "code" => "type-v4",
+      "title" => "TypeV4",
+      "detail" => "The property '' of type null did not match the following type: object",
+      "type" => "errors"
+    }
     errors = JSON.parse(body.first)['errors']
     assert_equal expected, errors.first
   end
@@ -481,7 +492,11 @@ class RequestValidatorTest < Minitest::Test
     status, headers, body = @validator.call(env)
     assert_equal 400, status
     # TODO: this seems like the wrong error
-    expected = {"code"=>"type-v4", "title"=>"TypeV4", "detail"=>"The property '' of type null did not match the following type: object"}
+    expected = {
+      "code" => "type-v4",
+      "title" => "TypeV4",
+      "detail" => "The property '' of type null did not match the following type: object"
+    }
     validate_error(expected, body)
   end
 

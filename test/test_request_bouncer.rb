@@ -53,7 +53,11 @@ class RequestBouncerTest < Minitest::Test
 
     status, headers, body = bouncer.call(env)
     assert_equal 400, status
-    expected = {"code"=>"headers-missing", "title"=>"Headers missing", "detail"=>"Required headers were not present in the request"}
+    expected = {
+      "code" => "headers-missing",
+      "title" => "Headers missing",
+      "detail" => "Required headers were not present in the request"
+    }
     validate_error(expected, body)
   end
 
@@ -68,7 +72,14 @@ class RequestBouncerTest < Minitest::Test
 
     status, headers, body = bouncer.call(env)
     assert_equal 400, status
-    expected = {"id"=> nil, "status"=>400, "code"=>"headers-missing", "title"=>"Headers missing", "detail"=>"Required headers were not present in the request", "type"=>"errors"}
+    expected = {
+      "id" => nil,
+      "status" => 400,
+      "code" => "headers-missing",
+      "title" => "Headers missing",
+      "detail" => "Required headers were not present in the request",
+      "type" => "errors"
+    }
     errors = JSON.parse(body.first)['errors']
     assert_equal expected, errors.first
   end
@@ -78,7 +89,11 @@ class RequestBouncerTest < Minitest::Test
       env = mock_env(method, { 'CONTENT_TYPE' => 'junk' })
       status, headers, body = @bouncer.call(env)
       assert_equal 400, status
-      expected = {"code"=>"content-type-unsupported", "title"=>"Request content-type is unsupported", "detail"=>"junk is not a supported content-type"}
+      expected = {
+        "code" => "content-type-unsupported",
+        "title" => "Request content-type is unsupported",
+        "detail" => "junk is not a supported content-type"
+      }
       validate_error(expected, body)
     end
   end
@@ -98,7 +113,11 @@ class RequestBouncerTest < Minitest::Test
     env = mock_env('POST', { 'CONTENT_TYPE' => 'application/json' })
     status, headers, body = bouncer.call(env)
     assert_equal 400, status
-    expected = {"code"=>"content-type-unsupported", "title"=>"Request content-type is unsupported", "detail"=>"application/json is not a supported content-type"}
+    expected = {
+      "code" => "content-type-unsupported",
+      "title" => "Request content-type is unsupported",
+      "detail" => "application/json is not a supported content-type"
+    }
     validate_error(expected, body)
   end
 
