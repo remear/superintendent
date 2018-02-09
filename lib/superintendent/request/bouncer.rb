@@ -10,7 +10,7 @@ module Superintendent
           'application/json',
           'application/x-www-form-urlencoded'
         ],
-        :error_class => Superintendent::Request::Error
+        error_class: Superintendent::Request::Error
       }
 
       def initialize(app, opts={})
