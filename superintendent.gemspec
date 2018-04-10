@@ -21,8 +21,8 @@ Gem::Specification.new do |spec|
 
   spec.add_runtime_dependency 'rack', '>= 2.0.0.alpha', '< 3.0'
   spec.add_runtime_dependency 'json-schema', '~> 2.5'
-  spec.add_runtime_dependency 'activesupport', '>= 5.0', '< 5.2'
-  spec.add_runtime_dependency 'actionpack', '>= 5.0', '< 5.2'
+  spec.add_runtime_dependency 'activesupport', '>= 5.2.0', '< 5.3'
+  spec.add_runtime_dependency 'actionpack', '>= 5.2.0', '< 5.3'
 
   spec.add_development_dependency 'bundler', '~> 1.10'
   spec.add_development_dependency "rake", '>= 10.4', '< 12.0'

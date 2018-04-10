@@ -1,3 +1,4 @@
+require 'action_dispatch/http/content_security_policy'
 require 'action_dispatch/http/request'
 
 module Superintendent
