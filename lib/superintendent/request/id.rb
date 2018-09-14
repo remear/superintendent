@@ -9,10 +9,10 @@ module Superintendent::Request
     end
 
     def call(env)
-      unless env['HTTP_X_REQUEST_ID']
-        env.merge!('HTTP_X_REQUEST_ID' => generate_request_id)
-      end
-      @app.call(env)
+      env['HTTP_X_REQUEST_ID'] ||= generate_request_id
+      status, headers, response = @app.call(env)
+      headers.merge!({'X-Request-Id' => env['HTTP_X_REQUEST_ID']})
+      [status, headers, response]
     end
 
     private
