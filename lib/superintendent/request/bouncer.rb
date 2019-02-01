@@ -16,12 +16,13 @@ module Superintendent
 
       def initialize(app, opts={})
         @app, @options = app, DEFAULT_OPTS.merge(opts)
+        freeze
       end
 
       def call(env)
-        @request = ActionDispatch::Request.new(env)
+        request = ActionDispatch::Request.new(env)
 
-        if required_keys_missing?
+        if required_headers_missing?(request.headers)
           return respond_400(
             @options[:error_class],
             [
@@ -30,21 +31,23 @@ module Superintendent
                 title: 'Headers missing',
                 detail: 'Required headers were not present in the request'
               }
-            ]
+            ],
+            request.headers[Id::X_REQUEST_ID]
           )
         end
 
-        if %w[POST PUT PATCH].include? @request.request_method
-          if unsupported_content_type?
+        if %w[POST PUT PATCH].include? request.request_method
+          if unsupported_content_type?(request.content_type)
             return respond_400(
               @options[:error_class],
               [
                 {
                   code: 'content-type-unsupported',
                   title: 'Request content-type is unsupported',
-                  detail: "#{@request.content_type} is not a supported content-type"
+                  detail: "#{request.content_type} is not a supported content-type"
                 }
-              ]
+              ],
+              request.headers[Id::X_REQUEST_ID]
             )
           end
         end
@@ -54,15 +57,13 @@ module Superintendent
 
       private
 
-      def unsupported_content_type?
-        content_type = @request.content_type
+      def unsupported_content_type?(content_type)
         return false if content_type.nil? || content_type.empty?
-
         !@options[:supported_content_types].include? content_type
       end
 
-      def required_keys_missing?
-        @options[:required_headers].any? { |key| !@request.headers.include?(key) }
+      def required_headers_missing?(headers)
+        @options[:required_headers].any? { |key| !headers.include?(key) }
       end
     end
   end

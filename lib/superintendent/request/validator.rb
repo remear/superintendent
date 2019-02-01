@@ -25,37 +25,36 @@ module Superintendent::Request
     def initialize(app, opts={})
       @app = app
       @options = DEFAULT_OPTIONS.merge(opts)
+      @forms = load_forms
+      freeze
     end
 
     def call(env)
-      @request = ActionDispatch::Request.new(env)
+      request = ActionDispatch::Request.new(env)
 
-      # Only manage requests for the selected Mime Types and
-      # FORM_METHOD_ACTIONS.
-      if @options[:monitored_content_types].include?(@request.content_type) &&
-        FORM_METHOD_ACTIONS.has_key?(@request.request_method)
+      if monitored_request?(request)
+        request_data = unnested_params(
+          request.env['CONTENT_TYPE'],
+          request.request_parameters
+        )
+        resource = requested_resource(request.path_info)
+        form = form_for_method(resource, request.request_method)
 
-        request_data = unnested_params(@request.request_parameters)
-        resource = requested_resource(@request.path_info)
-
-        begin
-          form = form_for_method(resource, @request.request_method)
-        rescue NameError => e
-          return respond_404 # Return a 404 if no form was found.
-        end
-
-        unless skip_validation?(form, request_data)
+        unless skip_validation?(form, request.request_method, request_data)
           return respond_404 if form.nil?
           errors = JSON::Validator.fully_validate(
             form,
             request_data,
             { errors_as_objects: true }
           )
-          return respond_400(@options[:error_class], serialize_errors(errors)) if errors.present?
-          drop_extra_params!(
-            form,
-            request_data
-          ) unless request_data.blank?
+          return (
+            respond_400(
+              @options[:error_class],
+              serialize_errors(errors),
+              request.headers[Id::X_REQUEST_ID]
+            )
+          ) if errors.present?
+          drop_extra_params!(form, request_data) unless request_data.blank?
         end
       end
 
@@ -63,6 +62,21 @@ module Superintendent::Request
     end
 
     private
+
+    def load_forms
+      forms = Hash.new
+      Dir["#{@options[:forms_path]}/*_form.rb"].each do |path|
+        filename = File.basename(path, File.extname(path))
+        require path
+        klass = filename.classify.constantize
+        forms[klass.to_s.delete_suffix('Form').downcase] = {}.tap do |h|
+          h['create'] = klass.create if klass.respond_to?(:create)
+          h['update'] = klass.update if klass.respond_to?(:update)
+          h['delete'] = klass.delete if klass.respond_to?(:delete)
+        end
+      end
+      forms.with_indifferent_access
+    end
 
     def serialize_errors(form_errors)
       errors = adjust_errors(form_errors).map do |e|
@@ -74,13 +88,18 @@ module Superintendent::Request
       end
     end
 
-    def skip_validation?(form, request_data)
-      @request.request_method == 'DELETE' && form.nil? && request_data.blank?
+    def monitored_request?(request)
+      @options[:monitored_content_types].include?(request.env['CONTENT_TYPE']) &&
+        FORM_METHOD_ACTIONS.has_key?(request.request_method)
     end
 
-    def unnested_params(params)
+    def skip_validation?(form, request_method, request_data)
+      request_method == 'DELETE' && form.nil? && request_data.blank?
+    end
+
+    def unnested_params(content_type, params)
       return {} unless params.presence
-      k = case @request.env['CONTENT_TYPE']
+      k = case content_type
           when JSON_CONTENT_TYPE then '_json'
           when JSON_API_CONTENT_TYPE then '_jsonapi'
           end
@@ -96,9 +115,8 @@ module Superintendent::Request
     end
 
     def form_for_method(resource, request_method)
-      forms_klass = "#{resource}Form".constantize
-      method = FORM_METHOD_ACTIONS[request_method]
-      forms_klass.send(method).with_indifferent_access if forms_klass.respond_to?(method)
+      action = FORM_METHOD_ACTIONS[request_method]
+      @forms.dig(resource.downcase, action)
     end
 
     # Adjust the errors returned from the schema validator so they can be

@@ -1,184 +1,12 @@
 require_relative 'test_helper'
 
-class UserForm
-  def self.create
-    {
-      "type" => "object",
-      "properties": {
-        "data": {
-          "type" => "object",
-          "properties" => {
-            "attributes" => {
-              "type" => "object",
-              "properties" => {
-                "first_name" => {
-                  "type" => "string"
-                },
-                "last_name" => {
-                  "type" => "string"
-                }
-              },
-              "required" => [
-                "first_name"
-              ]
-            },
-            "type" => {
-              "type" => "string",
-              "enum" => [ "users" ]
-            }
-          },
-          "required" => [
-            "attributes",
-            "type"
-          ]
-        }
-      },
-      "required": [
-        "data"
-      ]
-    }
-  end
-
-  def self.update
-    {
-      "type" => "object",
-      "properties": {
-        "data": {
-          "type" => "object",
-          "properties" => {
-            "attributes" => {
-              "type" => "object",
-              "properties" => {
-                "first_name" => {
-                  "type" => "string"
-                },
-                "last_name" => {
-                  "type" => "string"
-                }
-              }
-            },
-            "id" => {
-              "type" => "string"
-            },
-            "type" => {
-              "type" => "string",
-              "enum" => [ "users" ]
-            }
-          },
-          "required" => [
-            "attributes",
-            "id",
-            "type"
-          ]
-        }
-      },
-      "required": [
-        "data"
-      ]
-    }
-  end
-end
-
-class UserRelationshipsMotherForm
-  def self.update
-    form
-  end
-
-  def self.delete
-    form
-  end
-
-  def self.form
-    {
-      "type" => "object",
-      "properties": {
-        "data": {
-          "type" => "object",
-          "properties" => {
-            "id" => {
-              "type" => "string"
-            },
-            "type" => {
-              "type" => "string",
-              "enum" => [ "mothers" ]
-            }
-          },
-          "required" => [
-            "id",
-            "type"
-          ]
-        }
-      },
-      "required": [
-        "data"
-      ]
-    }
-  end
-  private_class_method :form
-end
-
-class NoMethodsForm
-end
-
-class UserRelationshipsThingForm
-  def self.update
-    {
-      "type" => "object",
-      "properties": {
-        "data": {
-          "type" => "array"
-        }
-      },
-      "required": [
-        "data"
-      ]
-    }
-  end
-end
-
-class NoAttributesSuppliedForm
-  def self.create
-    {
-      "type" => "object",
-      "properties": {
-        "data": {
-          "type" => "object",
-          "properties" => {
-            "meta" => {
-              "type" => "object"
-            },
-            "attributes" => {
-              "type" => "object",
-              "properties" => {
-                "foo" => {
-                  "type" => "object"
-                }
-              }
-            },
-            "type" => {
-              "type" => "string",
-              "enum" => [ "no_attributes" ]
-            }
-          },
-          "required" => [
-            "meta",
-            "type"
-          ]
-        }
-      },
-      "required": [
-        "data"
-      ]
-    }
-  end
-end
-
 class RequestValidatorTest < Minitest::Test
   def setup
     @app = lambda { |env| [200, {}, []] }
     @validator = Superintendent::Request::Validator.new(
       @app,
-      monitored_content_types: ['application/json']
+      monitored_content_types: ['application/json', 'application/vnd.api+json'],
+      forms_path: File.expand_path('../forms', __FILE__)
     )
   end
 
@@ -458,7 +286,8 @@ class RequestValidatorTest < Minitest::Test
     validator = Superintendent::Request::Validator.new(
       @app,
       monitored_content_types: ['application/json'],
-      error_class: MyError
+      error_class: MyError,
+      forms_path: File.expand_path('../forms', __FILE__)
     )
     params = {
       attributes: {

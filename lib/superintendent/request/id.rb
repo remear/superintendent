@@ -6,6 +6,7 @@ module Superintendent::Request
 
     def initialize(app)
       @app = app
+      freeze
     end
 
     def call(env)

@@ -16,8 +16,8 @@ class RequestIdTest < Minitest::Test
   end
 
   def test_no_upstream_request_id
-    request_id = @bouncer.send(:generate_request_id)
-    @bouncer.expects(:generate_request_id).returns(request_id)
+    request_id = SecureRandom.uuid
+    SecureRandom.stubs(:uuid).returns(request_id)
     env = mock_env()
     status, _ = @bouncer.call(env)
     assert_equal 200, status

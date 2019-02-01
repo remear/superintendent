@@ -7,17 +7,19 @@ module Superintendent::Request
       [404, {'Content-Type' => JSON_API_CONTENT_TYPE}, ['']]
     end
 
-    def respond_400(error_class, errors)
+    def respond_400(error_class, errors, request_id)
       [
         400,
         {'Content-Type' => JSON_API_CONTENT_TYPE},
         [
-          JSON.pretty_generate( errors: attributes_to_errors(error_class, errors))
+          JSON.pretty_generate(
+            errors: attributes_to_errors(error_class, errors, request_id)
+          )
         ]
       ]
     end
 
-    def attributes_to_errors(error_class, errors)
+    def attributes_to_errors(error_class, errors, request_id)
       errors.map do |attributes|
         error_class.new(
           {
@@ -26,10 +28,6 @@ module Superintendent::Request
           }.merge(attributes)
         ).to_h
       end
-    end
-
-    def request_id
-      @request.headers[Id::X_REQUEST_ID]
     end
   end
 end
