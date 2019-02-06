@@ -1,4 +1,4 @@
-class UserRelationshipsThingForm < Superintendent::Request::Form
+class UserRelationshipsThingForm
   def self.update
     {
       "type" => "object",

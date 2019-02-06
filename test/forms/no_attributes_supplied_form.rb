@@ -1,4 +1,4 @@
-class NoAttributesSuppliedForm < Superintendent::Request::Form
+class NoAttributesSuppliedForm
   def self.create
     {
       "type" => "object",

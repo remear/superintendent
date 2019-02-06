@@ -1,4 +1,4 @@
-class UserForm < Superintendent::Request::Form
+class UserForm
   def self.create
     {
       "type" => "object",

@@ -1,2 +1,2 @@
-class NoMethodsForm < Superintendent::Request::Form
+class NoMethodsForm
 end

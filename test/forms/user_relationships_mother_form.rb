@@ -1,4 +1,4 @@
-class UserRelationshipsMotherForm < Superintendent::Request::Form
+class UserRelationshipsMotherForm
   def self.update
     form
   end
