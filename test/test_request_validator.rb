@@ -22,13 +22,13 @@ class RequestValidatorTest < Minitest::Test
 
   def test_default_env
     env = Rack::MockRequest.env_for('/', { 'method': 'GET' })
-    status, headers, body = @validator.call(env)
+    status, _headers, _body = @validator.call(env)
     assert_equal 200, status
   end
 
   def test_monitored_content
     env = mock_env('/', 'GET')
-    status, headers, body = @validator.call(env)
+    status, _headers, _body = @validator.call(env)
     assert_equal 200, status
   end
 
@@ -49,7 +49,7 @@ class RequestValidatorTest < Minitest::Test
       input: JSON.generate(params),
       'CONTENT_TYPE' => 'application/vnd.api+json'
     )
-    status, headers, body = @validator.call(env)
+    status, _headers, _body = @validator.call(env)
     assert_equal 200, status
   end
 
@@ -72,7 +72,7 @@ class RequestValidatorTest < Minitest::Test
         input: JSON.generate(params),
         'CONTENT_TYPE' => 'application/vnd.api+json'
       )
-      status, headers, body = @validator.call(env)
+      status, _headers, _body = @validator.call(env)
       assert_equal 200, status
     end
   end
@@ -90,7 +90,7 @@ class RequestValidatorTest < Minitest::Test
       }
     }
     env = mock_env('/users/US5d251f5d477f42039170ea968975011b', 'PUT', input: JSON.generate(params))
-    status, headers, body = @validator.call(env)
+    status, _headers, _body = @validator.call(env)
     assert_equal 200, status
   end
 
@@ -108,7 +108,7 @@ class RequestValidatorTest < Minitest::Test
     }
     env = mock_env('/users/US5d251f5d477f42039170ea968975011b', 'PUT',
                    input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
-    status, headers, body = @validator.call(env)
+    status, _headers, _body = @validator.call(env)
     assert_equal 200, status
   end
 
@@ -123,7 +123,7 @@ class RequestValidatorTest < Minitest::Test
     }
     env = mock_env('/no_attributes_supplied/NA1111111111111111111111111111111', 'POST',
                    input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
-    status, headers, body = @validator.call(env)
+    status, _headers, _body = @validator.call(env)
     assert_equal 200, status
   end
 
@@ -138,7 +138,7 @@ class RequestValidatorTest < Minitest::Test
     }
     env = mock_env('/users/US5d251f5d477f42039170ea968975011b/relationships/mother', 'PUT',
                    input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
-    status, headers, body = @validator.call(env)
+    status, _headers, _body = @validator.call(env)
     assert_equal 200, status
   end
 
@@ -153,7 +153,7 @@ class RequestValidatorTest < Minitest::Test
     }
     env = mock_env('/users/US5d251f5d477f42039170ea968975011b/relationships/mother', 'PUT',
                    input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
-    status, headers, body = @validator.call(env)
+    status, _headers, body = @validator.call(env)
     assert_equal 400, status
     expected = {"status"=>400, "code"=>"enum", "title"=>"Enum", "detail"=>"The property 'data/type' value \"fathers\" did not match one of the following values: mothers"}
     validate_error(expected, body)
@@ -168,7 +168,7 @@ class RequestValidatorTest < Minitest::Test
     }
     env = mock_env('/users/US5d251f5d477f42039170ea968975011b/relationships/father', 'PUT',
                    input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
-    status, headers, body = @validator.call(env)
+    status, _headers, _body = @validator.call(env)
     assert_equal 404, status
   end
 
@@ -183,7 +183,7 @@ class RequestValidatorTest < Minitest::Test
     }
     env = mock_env('/users/US5d251f5d477f42039170ea968975011b/relationships/mother', 'DELETE',
                    input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
-    status, headers, body = @validator.call(env)
+    status, _headers, _body = @validator.call(env)
     assert_equal 200, status
   end
 
@@ -195,7 +195,7 @@ class RequestValidatorTest < Minitest::Test
     }
     env = mock_env('/users/US5d251f5d477f42039170ea968975011b/relationships/mother', 'DELETE',
                    input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
-    status, headers, body = @validator.call(env)
+    status, _headers, body = @validator.call(env)
     assert_equal 400, status
     expected = { "code"=>"type-v4", "title"=>"TypeV4", "detail"=>"The property '' of type null did not match the following type: object" }
     validate_error(expected, body)
@@ -204,7 +204,7 @@ class RequestValidatorTest < Minitest::Test
   def test_relationships_delete_400_no_body
     env = mock_env('/users/US5d251f5d477f42039170ea968975011b/relationships/mother', 'DELETE',
                    'CONTENT_TYPE' => 'application/vnd.api+json')
-    status, headers, body = @validator.call(env)
+    status, _headers, body = @validator.call(env)
     assert_equal 400, status
     expected = {"code"=>"required", "title"=>"Required", "detail"=>"The request did not contain a required property of 'data'"}
     validate_error(expected, body)
@@ -221,14 +221,14 @@ class RequestValidatorTest < Minitest::Test
     }
     env = mock_env('/users/US5d251f5d477f42039170ea968975011b', 'DELETE',
                    input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
-    status, headers, body = @validator.call(env)
+    status, _headers, _body = @validator.call(env)
     assert_equal 404, status
   end
 
   def test_delete_200_no_body_no_form_method
     env = mock_env('/users/US5d251f5d477f42039170ea968975011b', 'DELETE',
                    'CONTENT_TYPE' => 'application/vnd.api+json')
-    status, headers, body = @validator.call(env)
+    status, _headers, _body = @validator.call(env)
     assert_equal 200, status
   end
 
@@ -236,7 +236,7 @@ class RequestValidatorTest < Minitest::Test
     ['POST', 'PATCH', 'PUT'].each do |verb|
       env = mock_env('/no_methods/NM5d251f5d477f42039170ea968975011b', verb,
                      'CONTENT_TYPE' => 'application/vnd.api+json')
-      status, headers, body = @validator.call(env)
+      status, _headers, _body = @validator.call(env)
       assert_equal 404, status
     end
 
@@ -248,19 +248,19 @@ class RequestValidatorTest < Minitest::Test
     }
     env = mock_env('/users/US5d251f5d477f42039170ea968975011b/relationships/things', 'PUT',
                    input: JSON.generate(params), 'CONTENT_TYPE' => 'application/vnd.api+json')
-    status, headers, body = @validator.call(env)
+    status, _headers, _body = @validator.call(env)
     assert_equal 200, status
   end
 
   def test_no_form_404
     env = mock_env('/things', 'POST')
-    status, headers, body = @validator.call(env)
+    status, _headers, _body = @validator.call(env)
     assert_equal 404, status
   end
 
   def test_nested_resource_no_form_404
     env = mock_env('/users/US5d251f5d477f42039170ea968975011b/things', 'POST')
-    status, headers, body = @validator.call(env)
+    status, _headers, _body = @validator.call(env)
     assert_equal 404, status
   end
 
@@ -272,7 +272,7 @@ class RequestValidatorTest < Minitest::Test
       type: 'users'
     }
     env = mock_env('/users', 'POST', input: JSON.generate(params))
-    status, headers, body = @validator.call(env)
+    status, _headers, body = @validator.call(env)
     assert_equal 400, status
     expected = {
       "code" => "type-v4",
@@ -296,7 +296,7 @@ class RequestValidatorTest < Minitest::Test
       type: 'users'
     }
     env = mock_env('/users', 'POST', input: JSON.generate(params))
-    status, headers, body = validator.call(env)
+    status, _headers, body = validator.call(env)
     assert_equal 400, status
     expected = {
       "id" => nil,
@@ -318,7 +318,7 @@ class RequestValidatorTest < Minitest::Test
       type: 'users'
     }
     env = mock_env('/users', 'POST', input: JSON.generate(params))
-    status, headers, body = @validator.call(env)
+    status, _headers, body = @validator.call(env)
     assert_equal 400, status
     # TODO: this seems like the wrong error
     expected = {
@@ -347,7 +347,7 @@ class RequestValidatorTest < Minitest::Test
       'POST',
       input: JSON.generate(params)
     )
-    status, headers, body = @validator.call(env)
+    status, _headers, _body = @validator.call(env)
     attributes = env.dig(
       'action_dispatch.request.request_parameters',
       '_json',

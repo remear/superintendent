@@ -37,7 +37,7 @@ class RequestBouncerTest < Minitest::Test
       @app, { required_headers: ['CustomHeader'] }
     )
 
-    status, headers, body = bouncer.call(env)
+    status, _headers, body = bouncer.call(env)
     response = JSON.parse(body.first)
     error = response['errors'][0]['attributes']
     assert_equal 400, status
@@ -51,7 +51,7 @@ class RequestBouncerTest < Minitest::Test
       @app, { required_headers: ['Custom-Header'] }
     )
 
-    status, headers, body = bouncer.call(env)
+    status, _headers, body = bouncer.call(env)
     assert_equal 400, status
     expected = {
       "code" => "headers-missing",
@@ -70,7 +70,7 @@ class RequestBouncerTest < Minitest::Test
       }
     )
 
-    status, headers, body = bouncer.call(env)
+    status, _headers, body = bouncer.call(env)
     assert_equal 400, status
     expected = {
       "id" => nil,
@@ -87,7 +87,7 @@ class RequestBouncerTest < Minitest::Test
   def test_bad_content_type
     %w[POST PUT PATCH].each do |method|
       env = mock_env(method, { 'CONTENT_TYPE' => 'junk' })
-      status, headers, body = @bouncer.call(env)
+      status, _headers, body = @bouncer.call(env)
       assert_equal 400, status
       expected = {
         "code" => "content-type-unsupported",
@@ -111,7 +111,7 @@ class RequestBouncerTest < Minitest::Test
     )
 
     env = mock_env('POST', { 'CONTENT_TYPE' => 'application/json' })
-    status, headers, body = bouncer.call(env)
+    status, _headers, body = bouncer.call(env)
     assert_equal 400, status
     expected = {
       "code" => "content-type-unsupported",

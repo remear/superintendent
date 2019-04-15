@@ -79,7 +79,7 @@ module Superintendent::Request
     end
 
     def serialize_errors(form_errors)
-      errors = adjust_errors(form_errors).map do |e|
+      adjust_errors(form_errors).map do |e|
         {
           code: e[:failed_attribute].underscore.dasherize,
           title: e[:failed_attribute],
