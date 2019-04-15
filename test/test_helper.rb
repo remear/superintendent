@@ -2,7 +2,7 @@ require 'simplecov'
 SimpleCov.start
 require 'minitest/autorun'
 require 'rack/mock'
-require 'mocha/test_unit'
+require 'mocha/minitest'
 require "minitest/reporters"
 Minitest::Reporters.use! Minitest::Reporters::SpecReporter.new
 require 'active_support/concern'
